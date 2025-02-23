@@ -11,5 +11,4 @@ type User struct {
 	Name       string `gorm:"not null"`
 	Role       string `gorm:"not null"` // "manager" или "member"
 	TeamID     *uint  // Для участников — ID команды, к которой они принадлежат
-	Teams      []Team `gorm:"foreignKey:ManagerID"` // Для руководителя — список управляемых команд
 }

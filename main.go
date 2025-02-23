@@ -22,9 +22,14 @@ func main() {
 
 	storage.ConnectDatabase()
 
+	if err := storage.DB.AutoMigrate(&models.User{}); err != nil {
+		log.Fatal("Ошибка миграции пользователей: ", err.Error())
+	}
+	if err := storage.DB.AutoMigrate(&models.Team{}, &models.Task{}, &models.Meeting{}, &models.Notification{}); err != nil {
+		log.Fatal("Ошибка миграции остальных моделей: ", err.Error())
+	}
+
 	if err := storage.DB.AutoMigrate(
-		&models.User{},         // сначала создаём таблицу пользователей
-		&models.Team{},         // затем таблица команд, которая ссылается на пользователей
 		&models.Task{},         // далее таблица задач
 		&models.Meeting{},      // затем таблица встреч
 		&models.Notification{}, // и, наконец, таблица уведомлений
