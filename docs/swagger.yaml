@@ -1,0 +1,96 @@
+definitions:
+  auth.RegisterInput:
+    properties:
+      name:
+        type: string
+      role:
+        description: '"manager" или "member"'
+        enum:
+        - manager
+        - member
+        type: string
+      telegram_id:
+        description: Уникальный идентификатор Telegram
+        type: string
+    required:
+    - role
+    - telegram_id
+    type: object
+  response.ErrorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  response.SuccessResponse:
+    properties:
+      message:
+        type: string
+    type: object
+info:
+  contact: {}
+  title: Сервис для контроля задачами и встречами команды
+paths:
+  /auth:
+    get:
+      consumes:
+      - application/json
+      description: Проверяет, зарегистрирован ли пользователь по telegram_id. Если
+        пользователь найден, возвращает его данные, иначе – сообщение об ошибке.
+      parameters:
+      - description: Уникальный идентификатор Telegram
+        in: query
+        name: telegram_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Данные пользователя
+          schema:
+            $ref: '#/definitions/auth.RegisterInput'
+        "400":
+          description: Ошибка telegram_id is required
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "401":
+          description: Пользователь не найден
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Проверка авторизации пользователя
+      tags:
+      - auth
+    post:
+      consumes:
+      - application/json
+      description: Регистрация пользователя с помощью уникального telegram_id
+      parameters:
+      - description: Данные пользователя для регистрации
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/auth.RegisterInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешная регистрация
+          schema:
+            $ref: '#/definitions/response.SuccessResponse'
+        "400":
+          description: Ошибка валидации
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "409":
+          description: Пользователь уже зарегистрирован
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "507":
+          description: Не удалось создать пользователя
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Регистрация пользователя
+      tags:
+      - auth
+swagger: "2.0"
