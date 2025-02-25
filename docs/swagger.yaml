@@ -16,6 +16,13 @@ definitions:
     - role
     - telegram_id
     type: object
+  response.ErrorCodeResponse:
+    properties:
+      code:
+        type: string
+      error:
+        type: string
+    type: object
   response.ErrorResponse:
     properties:
       error:
@@ -197,6 +204,40 @@ paths:
           schema:
             $ref: '#/definitions/response.ErrorResponse'
       summary: Присоединение к команде
+      tags:
+      - team
+  /team/my:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает данные о команде, к которой принадлежит пользователь
+      parameters:
+      - description: Уникальный идентификатор Telegram
+        in: query
+        name: telegram_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Информация о команде
+          schema:
+            $ref: '#/definitions/response.TeamResponse'
+        "400":
+          description: Отсутствует telegram_id
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "401":
+          description: Пользователь не найден
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: 'Error:Отсутствует команда у пользователя Сode:USER_HAS_NO_TEAM,
+            Error: Команда не найдена Сode:TEAM_NOT_FOUND'
+          schema:
+            $ref: '#/definitions/response.ErrorCodeResponse'
+      summary: Получение информации о своей команде
       tags:
       - team
 swagger: "2.0"

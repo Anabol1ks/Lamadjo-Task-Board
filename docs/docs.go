@@ -225,6 +225,56 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/team/my": {
+            "get": {
+                "description": "Возвращает данные о команде, к которой принадлежит пользователь",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "team"
+                ],
+                "summary": "Получение информации о своей команде",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Уникальный идентификатор Telegram",
+                        "name": "telegram_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Информация о команде",
+                        "schema": {
+                            "$ref": "#/definitions/response.TeamResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Отсутствует telegram_id",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Пользователь не найден",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Error:Отсутствует команда у пользователя Сode:USER_HAS_NO_TEAM, Error: Команда не найдена Сode:TEAM_NOT_FOUND",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorCodeResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -248,6 +298,17 @@ const docTemplate = `{
                     ]
                 },
                 "telegram_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "response.ErrorCodeResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "error": {
                     "type": "string"
                 }
             }

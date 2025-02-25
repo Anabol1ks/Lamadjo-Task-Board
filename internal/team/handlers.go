@@ -144,3 +144,46 @@ func JoinTeamHandler(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Вы успешно присоединились к команде", "team": team})
 }
+
+// GetMyTeamHandler получает информацию о команде текущего пользователя
+// @Summary Получение информации о своей команде
+// @Description Возвращает данные о команде, к которой принадлежит пользователь
+// @Tags team
+// @Accept json
+// @Produce json
+// @Param telegram_id query string true "Уникальный идентификатор Telegram"
+// @Success 200 {object} response.TeamResponse "Информация о команде"
+// @Failure 400 {object} response.ErrorResponse "Отсутствует telegram_id"
+// @Failure 401 {object} response.ErrorResponse "Пользователь не найден"
+// @Failure 404 {object} response.ErrorCodeResponse "Error:Отсутствует команда у пользователя Сode:USER_HAS_NO_TEAM, Error: Команда не найдена Сode:TEAM_NOT_FOUND"
+// @Router /team/my [get]
+func GetMyTeamHandler(c *gin.Context) {
+	telegramID := c.Query("telegram_id")
+	if telegramID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "telegram_id is required"})
+		return
+	}
+
+	var user models.User
+	if err := storage.DB.Where("telegram_id = ?", telegramID).First(&user).Error; err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Пользователь не найден"})
+		return
+	}
+
+	if user.TeamID == nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "Отсутствует команда у пользователя",
+			"code":  "USER_HAS_NO_TEAM",
+		})
+		return
+	}
+
+	var team models.Team
+	if err := storage.DB.Where("id = ?", user.TeamID).First(&team).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "Команда не найдена",
+			"code":  "TEAM_NOT_FOUND",
+		})
+	}
+	c.JSON(http.StatusOK, team)
+}

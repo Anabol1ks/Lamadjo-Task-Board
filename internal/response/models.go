@@ -7,6 +7,10 @@ type SuccessResponse struct {
 type ErrorResponse struct {
 	Error string `json:"error"`
 }
+type ErrorCodeResponse struct {
+	Error string `json:"error"`
+	Code  string `json:"code"`
+}
 
 type TeamResponse struct {
 	Name        string `json:"name"`
