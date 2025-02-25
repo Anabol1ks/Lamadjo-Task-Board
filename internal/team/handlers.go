@@ -109,6 +109,7 @@ type InviteJoinRequest struct {
 // @Success 200 {object} response.SuccessResponse "Успешное присоединение к команде"
 // @Failure 400 {object} response.ErrorResponse "Ошибка валидации"
 // @Failure 404 {object} response.ErrorResponse "Неверный код приглашения или пользователь не найден"
+// @Failure 409 {object} response.ErrorResponse "Вы уже присоединились к этой команде"
 // @Failure 500 {object} response.ErrorResponse "Ошибка при присоединении к команде"
 // @Router /team/join [post]
 func JoinTeamHandler(c *gin.Context) {
