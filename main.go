@@ -9,6 +9,7 @@ import (
 	"github.com/Anabol1ks/Lamadjo-Task-Board/internal/auth"
 	"github.com/Anabol1ks/Lamadjo-Task-Board/internal/models"
 	"github.com/Anabol1ks/Lamadjo-Task-Board/internal/storage"
+	"github.com/Anabol1ks/Lamadjo-Task-Board/internal/team"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	swaggerFiles "github.com/swaggo/files"
@@ -46,6 +47,8 @@ func main() {
 	//
 
 	// Эндпоинты для управления командами
+	r.POST("/team", team.CreateTeamHandler)
+	r.POST("/team/join", team.JoinTeamHandler)
 	//
 
 	// Эндпоинты для управления участниками команды

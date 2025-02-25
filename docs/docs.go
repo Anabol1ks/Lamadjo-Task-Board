@@ -108,12 +108,124 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/team": {
+            "post": {
+                "description": "Создает команду, если запрос исходит от пользователя с ролью manager.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "team"
+                ],
+                "summary": "Создание команды",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Уникальный идентификатор Telegram",
+                        "name": "telegram_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "description": "Данные команды",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/team.CreateTeamInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Информация о созданной команде",
+                        "schema": {
+                            "$ref": "#/definitions/response.TeamResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Ошибка валидации или отсутствует telegram_id",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещен (не менеджер)",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Ошибка создания команды",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/team/join": {
+            "post": {
+                "description": "Позволяет пользователю присоединиться к команде, используя пригласительный код.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "team"
+                ],
+                "summary": "Присоединение к команде",
+                "parameters": [
+                    {
+                        "description": "Данные для присоединения к команде",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/team.InviteJoinRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Успешное присоединение к команде",
+                        "schema": {
+                            "$ref": "#/definitions/response.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Ошибка валидации",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Неверный код приглашения или пользователь не найден",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Ошибка при присоединении к команде",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
         "auth.RegisterInput": {
             "type": "object",
             "required": [
+                "name",
                 "role",
                 "telegram_id"
             ],
@@ -130,7 +242,6 @@ const docTemplate = `{
                     ]
                 },
                 "telegram_id": {
-                    "description": "Уникальный идентификатор Telegram",
                     "type": "string"
                 }
             }
@@ -147,6 +258,49 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "response.TeamResponse": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "invitelink": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "team.CreateTeamInput": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "team.InviteJoinRequest": {
+            "type": "object",
+            "required": [
+                "invite_code",
+                "telegram_id"
+            ],
+            "properties": {
+                "invite_code": {
+                    "type": "string"
+                },
+                "telegram_id": {
                     "type": "string"
                 }
             }

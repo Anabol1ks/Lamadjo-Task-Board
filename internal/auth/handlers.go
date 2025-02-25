@@ -10,8 +10,8 @@ import (
 )
 
 type RegisterInput struct {
-	TelegramID string `json:"telegram_id" binding:"required"` // Уникальный идентификатор Telegram
-	Name       string `json:"name"`
+	TelegramID string `json:"telegram_id" binding:"required"`
+	Name       string `json:"name" binding:"required"`
 	Role       string `json:"role" binding:"required,oneof=manager member"` // "manager" или "member"
 }
 
