@@ -351,6 +351,68 @@ const docTemplate = `{
                 }
             }
         },
+        "/team/leave": {
+            "get": {
+                "description": "Позволяет пользователю выйти из текущей команды",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "team"
+                ],
+                "summary": "Покинуть команду",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Уникальный идентификатор Telegram",
+                        "name": "telegram_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Команда успешно покинута",
+                        "schema": {
+                            "$ref": "#/definitions/response.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Отсутствует telegram_id",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Пользователь не найден",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Manager не может просто так покинуть команду",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Error: Отсутствует команда у пользователя Code: USER_HAS_NO_TEAM",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorCodeResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Ошибка при попытке покинуть команду",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/team/members": {
             "get": {
                 "description": "Возвращает список всех участников команды, кроме текущего пользователя. Доступно только для менеджеров.",

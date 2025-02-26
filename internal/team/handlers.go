@@ -362,3 +362,52 @@ func GetMembersTeam(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, member)
 }
+
+// LeaveMemberTeamHandler позволяет пользователю покинуть текущую команду
+// @Summary Покинуть команду
+// @Description Позволяет пользователю выйти из текущей команды
+// @Tags team
+// @Accept json
+// @Produce json
+// @Param telegram_id query string true "Уникальный идентификатор Telegram"
+// @Success 200 {object} response.SuccessResponse "Команда успешно покинута"
+// @Failure 400 {object} response.ErrorResponse "Отсутствует telegram_id"
+// @Failure 401 {object} response.ErrorResponse "Пользователь не найден"
+// @Failure 403 {object} response.ErrorResponse "Manager не может просто так покинуть команду"
+// @Failure 404 {object} response.ErrorCodeResponse "Error: Отсутствует команда у пользователя Code: USER_HAS_NO_TEAM"
+// @Failure 500 {object} response.ErrorResponse "Ошибка при попытке покинуть команду"
+// @Router /team/leave [get]
+func LeaveMemberTeamHandler(c *gin.Context) {
+	telegramID := c.Query("telegram_id")
+	if telegramID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "telegram_id is required"})
+		return
+	}
+
+	var user models.User
+	if err := storage.DB.Where("telegram_id = ?", telegramID).First(&user).Error; err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Пользователь не найден"})
+		return
+	}
+
+	if user.Role == "manager" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Manager не может просто так покинуть команду"})
+		return
+	}
+
+	if user.TeamID == nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "Отсутствует команда у пользователя",
+			"code":  "USER_HAS_NO_TEAM",
+		})
+		return
+	}
+
+	user.TeamID = nil
+	if err := storage.DB.Save(&user).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка при попытке покинуть команду"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Команда покинута"})
+}
