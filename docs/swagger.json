@@ -100,6 +100,75 @@
             }
         },
         "/team": {
+            "put": {
+                "description": "Обновляет название и описание команды. Доступно только для менеджеров.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "team"
+                ],
+                "summary": "Изменение информации о команде",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Уникальный идентификатор Telegram",
+                        "name": "telegram_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "description": "Данные для обновления команды",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/team.CreateTeamInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Команда успешно обновлена",
+                        "schema": {
+                            "$ref": "#/definitions/response.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Ошибка валидации или отсутствует telegram_id",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Пользователь не найден",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещен (не менеджер)",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Error:Отсутствует команда у пользователя Code:USER_HAS_NO_TEAM, Error:Команда не найдена Code:TEAM_NOT_FOUND",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorCodeResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Ошибка при обновлении команды",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            },
             "post": {
                 "description": "Создает команду, если запрос исходит от пользователя с ролью manager.",
                 "consumes": [
@@ -158,6 +227,62 @@
                 }
             }
         },
+        "/team/invite": {
+            "get": {
+                "description": "Возвращает ссылку для приглашения новых участников в команду. Доступно только для менеджеров.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "team"
+                ],
+                "summary": "Получение ссылки-приглашения",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Уникальный идентификатор Telegram",
+                        "name": "telegram_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "URL ссылки-приглашения",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Отсутствует telegram_id",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Пользователь не найден",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещен (не менеджер)",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Error:Отсутствует команда у пользователя Code:USER_HAS_NO_TEAM, Error:Команда не найдена Code:TEAM_NOT_FOUND",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorCodeResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/team/join": {
             "post": {
                 "description": "Позволяет пользователю присоединиться к команде, используя пригласительный код.",
@@ -196,9 +321,9 @@
                         }
                     },
                     "404": {
-                        "description": "Неверный код приглашения или пользователь не найден",
+                        "description": "Error: Команда не найдена CODE: INVITE_CODE_INVALID, Error: Пользователь не найден. Зарегистрируйтесь через бота. CODE: USER_NOT_FOUND",
                         "schema": {
-                            "$ref": "#/definitions/response.ErrorResponse"
+                            "$ref": "#/definitions/response.ErrorCodeResponse"
                         }
                     },
                     "409": {
@@ -209,6 +334,71 @@
                     },
                     "500": {
                         "description": "Ошибка при присоединении к команде",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/team/members": {
+            "get": {
+                "description": "Возвращает список всех участников команды, кроме текущего пользователя. Доступно только для менеджеров.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "team"
+                ],
+                "summary": "Получение списка участников команды",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Уникальный идентификатор Telegram",
+                        "name": "telegram_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Список участников команды",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/response.UserResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Отсутствует telegram_id или ошибка валидации",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Пользователь не найден",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещен (не менеджер)",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Error:Отсутствует команда у пользователя Code:USER_HAS_NO_TEAM, Error:Команда не найдена Code:TEAM_NOT_FOUND",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorCodeResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Ошибка при получении участников команды",
                         "schema": {
                             "$ref": "#/definitions/response.ErrorResponse"
                         }
@@ -329,6 +519,17 @@
                     "type": "string"
                 },
                 "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "response.UserResponse": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "telegram_id": {
                     "type": "string"
                 }
             }

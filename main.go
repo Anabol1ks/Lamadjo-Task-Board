@@ -50,6 +50,9 @@ func main() {
 	r.POST("/team", team.CreateTeamHandler)
 	r.POST("/team/join", team.JoinTeamHandler)
 	r.GET("/team/my", team.GetMyTeamHandler)
+	r.GET("/team/invite", team.GetLinkTeamHandler)
+	r.GET("/team/members", team.GetMembersTeam)
+	r.PUT("/team", team.ChangeTeamHandler)
 	//
 
 	// Эндпоинты для управления участниками команды

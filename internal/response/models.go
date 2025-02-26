@@ -17,3 +17,8 @@ type TeamResponse struct {
 	Description string `json:"description"`
 	InviteLink  string `json:"invitelink"`
 }
+
+type UserResponse struct {
+	TelegramID string `json:"telegram_id"`
+	Name       string `json:"name"`
+}
