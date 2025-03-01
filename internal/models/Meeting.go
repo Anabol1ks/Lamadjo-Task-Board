@@ -19,3 +19,8 @@ type Meeting struct {
 	TeamID         uint      `gorm:"not null"` // ID команды, для которой назначена встреча
 	CreatedBy      uint      // ID руководителя, создавшего встречу
 }
+
+type Room struct {
+	gorm.Model
+	Name string `gorm:"unique;not null"` // Уникальное имя или номер аудитории
+}

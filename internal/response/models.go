@@ -1,5 +1,7 @@
 package response
 
+import "time"
+
 type SuccessResponse struct {
 	Message string `json:"message"`
 }
@@ -27,4 +29,19 @@ type UserInfoResponse struct {
 	Name     string `json:"name"`
 	Role     string `json:"role"`
 	TeamName string `json:"team_name"`
+}
+
+type MeetingResponse struct {
+	ID             uint      `json:"id"`
+	Title          string    `json:"title"`
+	MeetingType    string    `json:"meeting_type"`
+	Date           time.Time `json:"date"`
+	StartTime      time.Time `json:"start_time"`
+	EndTime        time.Time `json:"end_time"`
+	ConferenceLink string    `json:"conference_link"`
+	Room           string    `json:"room"`
+	TeamID         uint      `json:"team_id"`
+	CreatedBy      uint      `json:"created_by"`
+	CreatedAt      time.Time `json:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at"`
 }

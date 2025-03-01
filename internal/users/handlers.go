@@ -39,7 +39,7 @@ func GetMyUser(c *gin.Context) {
 		TeamName: "Нет команды",
 	}
 
-	if user.TeamID != nil {
+	if user.TeamID == nil {
 		var team models.Team
 		if err := storage.DB.Where("id = ?", user.TeamID).First(&team).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Не удалось получить информацию о команде"})

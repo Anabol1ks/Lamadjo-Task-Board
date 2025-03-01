@@ -99,6 +99,134 @@
                 }
             }
         },
+        "/meetings": {
+            "post": {
+                "description": "Создает новую встречу для команды. Доступно только для менеджеров.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "meetings"
+                ],
+                "summary": "Создание встречи",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Уникальный идентификатор Telegram",
+                        "name": "telegram_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "description": "Данные встречи",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/meetings.CreateMeetingInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Информация о созданной встрече",
+                        "schema": {
+                            "$ref": "#/definitions/response.MeetingResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Ошибка валидации или некорректные данные",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Пользователь не найден",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещен (не менеджер)",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Конфликт по времени и аудитории",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/meetings/available-slots": {
+            "get": {
+                "description": "Возвращает список доступных временных слотов для указанной аудитории на выбранную дату",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "meetings"
+                ],
+                "summary": "Получение доступных временных слотов",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Номер аудитории",
+                        "name": "room",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Дата в формате YYYY-MM-DD",
+                        "name": "date",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Список доступных временных слотов",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/definitions/meetings.TimeSlot"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Отсутствуют обязательные параметры или неверный формат",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Ошибка при получении данных",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/team": {
             "put": {
                 "description": "Обновляет название и описание команды. Доступно только для менеджеров.",
@@ -220,6 +348,60 @@
                     },
                     "500": {
                         "description": "Ошибка создания команды",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Удаляет команду и очищает связи со всеми участниками. Доступно только для владельца команды.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "team"
+                ],
+                "summary": "Удаление команды",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Уникальный идентификатор Telegram",
+                        "name": "telegram_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Команда успешно удалена",
+                        "schema": {
+                            "$ref": "#/definitions/response.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Отсутствует telegram_id",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Пользователь не найден",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Error: Только руководитель может удалить команду Code: ONLY_MANAGER_DELETE_TEAM, Error: Вы не являетесь владельцем команды Code: NOT_OWNER_OF_TEAM",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorCodeResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Ошибка при удалении команды",
                         "schema": {
                             "$ref": "#/definitions/response.ErrorResponse"
                         }
@@ -517,6 +699,56 @@
                     }
                 }
             }
+        },
+        "/user": {
+            "get": {
+                "description": "Получает информацию о пользователе по его Telegram ID.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Получение информации о пользователе",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Telegram ID of the user",
+                        "name": "telegram_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Информация о пользователе",
+                        "schema": {
+                            "$ref": "#/definitions/response.UserInfoResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Ошибка валидации или отсутствует telegram_id",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Пользователь не найден",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Ошибка создания команды",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -544,6 +776,54 @@
                 }
             }
         },
+        "meetings.CreateMeetingInput": {
+            "type": "object",
+            "required": [
+                "date",
+                "end_time",
+                "meeting_type",
+                "start_time",
+                "title"
+            ],
+            "properties": {
+                "date": {
+                    "description": "Формат \"YYYY-MM-DD\"",
+                    "type": "string"
+                },
+                "end_time": {
+                    "description": "Формат \"HH:MM\"",
+                    "type": "string"
+                },
+                "meeting_type": {
+                    "description": "\"online\" или \"offline\"",
+                    "type": "string"
+                },
+                "room": {
+                    "description": "Обязательное для офлайн встреч",
+                    "type": "string"
+                },
+                "start_time": {
+                    "description": "Формат \"HH:MM\"",
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "meetings.TimeSlot": {
+            "type": "object",
+            "properties": {
+                "end": {
+                    "description": "Например, \"13:20\"",
+                    "type": "string"
+                },
+                "start": {
+                    "description": "Например, \"12:00\"",
+                    "type": "string"
+                }
+            }
+        },
         "response.ErrorCodeResponse": {
             "type": "object",
             "properties": {
@@ -559,6 +839,47 @@
             "type": "object",
             "properties": {
                 "error": {
+                    "type": "string"
+                }
+            }
+        },
+        "response.MeetingResponse": {
+            "type": "object",
+            "properties": {
+                "conference_link": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "created_by": {
+                    "type": "integer"
+                },
+                "date": {
+                    "type": "string"
+                },
+                "end_time": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "meeting_type": {
+                    "type": "string"
+                },
+                "room": {
+                    "type": "string"
+                },
+                "start_time": {
+                    "type": "string"
+                },
+                "team_id": {
+                    "type": "integer"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "updated_at": {
                     "type": "string"
                 }
             }
@@ -581,6 +902,20 @@
                     "type": "string"
                 },
                 "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "response.UserInfoResponse": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                },
+                "team_name": {
                     "type": "string"
                 }
             }

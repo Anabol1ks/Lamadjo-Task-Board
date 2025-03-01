@@ -423,7 +423,7 @@ func LeaveMemberTeamHandler(c *gin.Context) {
 // @Success 200 {object} response.SuccessResponse "Команда успешно удалена"
 // @Failure 400 {object} response.ErrorResponse "Отсутствует telegram_id"
 // @Failure 401 {object} response.ErrorResponse "Пользователь не найден"
-// @Failure 403 {object} response.ErrorCodeResponse "Error: Manager не может просто так покинуть команду Code: MANAGER_CANNOT_LEAVE_TEAM, Error: Вы не являетесь владельцем команды Code: NOT_OWNER_OF_TEAM"
+// @Failure 403 {object} response.ErrorCodeResponse "Error: Только руководитель может удалить команду Code: ONLY_MANAGER_DELETE_TEAM, Error: Вы не являетесь владельцем команды Code: NOT_OWNER_OF_TEAM"
 // @Failure 500 {object} response.ErrorResponse "Ошибка при удалении команды"
 // @Router /team [delete]
 func DeleteTeamHandler(c *gin.Context) {
@@ -439,8 +439,8 @@ func DeleteTeamHandler(c *gin.Context) {
 		return
 	}
 
-	if user.Role == "manager" {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Manager не может просто так покинуть команду", "code": "MANAGER_CANNOT_LEAVE_TEAM"})
+	if user.Role != "manager" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Только руководитель может удалить команду", "code": "ONLY_MANAGER_DELETE_TEAM"})
 		return
 	}
 

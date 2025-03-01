@@ -7,6 +7,7 @@ import (
 
 	_ "github.com/Anabol1ks/Lamadjo-Task-Board/docs"
 	"github.com/Anabol1ks/Lamadjo-Task-Board/internal/auth"
+	"github.com/Anabol1ks/Lamadjo-Task-Board/internal/meetings"
 	"github.com/Anabol1ks/Lamadjo-Task-Board/internal/models"
 	"github.com/Anabol1ks/Lamadjo-Task-Board/internal/storage"
 	"github.com/Anabol1ks/Lamadjo-Task-Board/internal/team"
@@ -32,7 +33,7 @@ func main() {
 	if err := storage.DB.AutoMigrate(&models.User{}); err != nil {
 		log.Fatal("Ошибка миграции пользователей: ", err.Error())
 	}
-	if err := storage.DB.AutoMigrate(&models.Team{}, &models.Task{}, &models.Meeting{}, &models.Notification{}); err != nil {
+	if err := storage.DB.AutoMigrate(&models.Team{}, &models.Task{}, &models.Meeting{}, &models.Notification{}, &models.Room{}); err != nil {
 		log.Fatal("Ошибка миграции остальных моделей: ", err.Error())
 	}
 
@@ -67,6 +68,8 @@ func main() {
 	//
 
 	// Эндпоинты встреч
+	r.POST("/meetings", meetings.CreateMeetingHandler)
+	r.GET("/meetings/available-slots", meetings.GetAvailableTimeSlotsHandler)
 	//
 
 	// Модуль уведомлений
