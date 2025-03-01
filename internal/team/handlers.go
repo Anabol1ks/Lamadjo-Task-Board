@@ -9,6 +9,7 @@ import (
 	"github.com/Anabol1ks/Lamadjo-Task-Board/internal/models"
 	"github.com/Anabol1ks/Lamadjo-Task-Board/internal/storage"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type CreateTeamInput struct {
@@ -410,4 +411,67 @@ func LeaveMemberTeamHandler(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Команда покинута"})
+}
+
+// DeleteTeamHandler удаляет команду и очищает связи с участниками
+// @Summary Удаление команды
+// @Description Удаляет команду и очищает связи со всеми участниками. Доступно только для владельца команды.
+// @Tags team
+// @Accept json
+// @Produce json
+// @Param telegram_id query string true "Уникальный идентификатор Telegram"
+// @Success 200 {object} response.SuccessResponse "Команда успешно удалена"
+// @Failure 400 {object} response.ErrorResponse "Отсутствует telegram_id"
+// @Failure 401 {object} response.ErrorResponse "Пользователь не найден"
+// @Failure 403 {object} response.ErrorCodeResponse "Error: Manager не может просто так покинуть команду Code: MANAGER_CANNOT_LEAVE_TEAM, Error: Вы не являетесь владельцем команды Code: NOT_OWNER_OF_TEAM"
+// @Failure 500 {object} response.ErrorResponse "Ошибка при удалении команды"
+// @Router /team [delete]
+func DeleteTeamHandler(c *gin.Context) {
+	telegramID := c.Query("telegram_id")
+	if telegramID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "telegram_id is required"})
+		return
+	}
+
+	var user models.User
+	if err := storage.DB.Where("telegram_id = ?", telegramID).First(&user).Error; err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Пользователь не найден"})
+		return
+	}
+
+	if user.Role == "manager" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Manager не может просто так покинуть команду", "code": "MANAGER_CANNOT_LEAVE_TEAM"})
+		return
+	}
+
+	var team models.Team
+	if err := storage.DB.Where("manager_id = ?", user.ID).First(&team).Error; err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Вы не являетесь владельцем команды", "code": "NOT_OWNER_OF_TEAM"})
+		return
+	}
+
+	// Удаляем команду и обнуляем TeamID у участников
+	err := storage.DB.Transaction(func(tx *gorm.DB) error {
+		// Обнуляем TeamID у всех участников команды
+		if err := tx.Model(&models.User{}).
+			Where("team_id = ?", team.ID).
+			Update("team_id", nil).
+			Error; err != nil {
+			return err
+		}
+
+		// Удаляем саму команду
+		if err := tx.Delete(&team).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка при удалении команды"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Команда успешно удалена"})
 }

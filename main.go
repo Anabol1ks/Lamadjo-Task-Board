@@ -10,6 +10,7 @@ import (
 	"github.com/Anabol1ks/Lamadjo-Task-Board/internal/models"
 	"github.com/Anabol1ks/Lamadjo-Task-Board/internal/storage"
 	"github.com/Anabol1ks/Lamadjo-Task-Board/internal/team"
+	"github.com/Anabol1ks/Lamadjo-Task-Board/internal/users"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	swaggerFiles "github.com/swaggo/files"
@@ -46,6 +47,8 @@ func main() {
 	r.GET("/auth", auth.CheckAuthHandler)
 	//
 
+	r.GET("/user", users.GetMyUser)
+
 	// Эндпоинты для управления командами
 	r.POST("/team", team.CreateTeamHandler)
 	r.POST("/team/join", team.JoinTeamHandler)
@@ -54,6 +57,7 @@ func main() {
 	r.GET("/team/members", team.GetMembersTeam)
 	r.GET("/team/leave", team.LeaveMemberTeamHandler)
 	r.PUT("/team", team.ChangeTeamHandler)
+	r.DELETE("/team", team.DeleteTeamHandler)
 	//
 
 	// Эндпоинты для управления участниками команды

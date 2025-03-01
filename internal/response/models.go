@@ -22,3 +22,9 @@ type UserResponse struct {
 	TelegramID string `json:"telegram_id"`
 	Name       string `json:"name"`
 }
+
+type UserInfoResponse struct {
+	Name     string `json:"name"`
+	Role     string `json:"role"`
+	TeamName string `json:"team_name"`
+}
