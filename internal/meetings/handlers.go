@@ -275,3 +275,63 @@ func GetAvailableTimeSlotsHandler(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"available_slots": availableSlots})
 }
+
+// DeleteMeetingHandler удаляет встречу
+// @Summary Удаление встречи
+// @Description Удаляет встречу из расписания команды. Доступно только для менеджеров.
+// @Tags meetings
+// @Accept json
+// @Produce json
+// @Param telegram_id query string true "Уникальный идентификатор Telegram"
+// @Param id path string true "ID встречи"
+// @Success 200 {object} response.SuccessResponse "Встреча успешно удалена"
+// @Failure 400 {object} response.ErrorResponse "Отсутствует telegram_id или ID встречи"
+// @Failure 401 {object} response.ErrorResponse "Пользователь не найден"
+// @Failure 403 {object} response.ErrorResponse "Доступ запрещен (не менеджер)"
+// @Failure 404 {object} response.ErrorResponse "Встреча не найдена"
+// @Failure 500 {object} response.ErrorResponse "Ошибка при удалении встречи"
+// @Router /meetings/{id} [delete]
+func DeleteMeetingHandler(c *gin.Context) {
+	telegramID := c.Query("telegram_id")
+	if telegramID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "telegram_id is required"})
+		return
+	}
+
+	meetingID := c.Param("id")
+	if meetingID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID встречи не указан"})
+		return
+	}
+
+	var user models.User
+	if err := storage.DB.Where("telegram_id = ?", telegramID).First(&user).Error; err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Пользователь не найден"})
+		return
+	}
+
+	if user.Role != "manager" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Только менеджер может удалять встречи"})
+		return
+	}
+
+	var meeting models.Meeting
+	if err := storage.DB.First(&meeting, meetingID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Встреча не найдена"})
+		return
+	}
+
+	if user.TeamID == nil || *user.TeamID != meeting.TeamID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Нет доступа к данной встрече"})
+		return
+	}
+
+	if err := storage.DB.Delete(&meeting).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка при удалении встречи"})
+		return
+	}
+
+	// (Опционально) можно отправить уведомление участникам о том, что встреча отменена
+
+	c.JSON(http.StatusOK, gin.H{"message": "Встреча успешно удалена"})
+}

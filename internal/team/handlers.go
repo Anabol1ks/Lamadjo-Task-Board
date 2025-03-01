@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/big"
 	"net/http"
+	"time"
 
 	"github.com/Anabol1ks/Lamadjo-Task-Board/internal/models"
 	"github.com/Anabol1ks/Lamadjo-Task-Board/internal/storage"
@@ -69,17 +70,10 @@ func CreateTeamHandler(c *gin.Context) {
 		return
 	}
 
-	inviteLink, err := generateInviteLink()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка генерации ссылки приглашения"})
-		return
-	}
-
 	team := models.Team{
 		Name:        input.Name,
 		Description: input.Description,
 		ManagerID:   user.ID,
-		InviteLink:  inviteLink,
 	}
 
 	if err := storage.DB.Create(&team).Error; err != nil {
@@ -110,7 +104,7 @@ type InviteJoinRequest struct {
 // @Param input body InviteJoinRequest true "Данные для присоединения к команде"
 // @Success 200 {object} response.SuccessResponse "Успешное присоединение к команде"
 // @Failure 400 {object} response.ErrorResponse "Ошибка валидации"
-// @Failure 404 {object} response.ErrorCodeResponse "Error: Команда не найдена CODE: INVITE_CODE_INVALID, Error: Пользователь не найден. Зарегистрируйтесь через бота. CODE: USER_NOT_FOUND"
+// @Failure 404 {object} response.ErrorCodeResponse "Error: Команда не найдена CODE: INVITE_CODE_INVALID, Error: Команда не найдена. CODE: TEAM_NOT_FOUND, Error: Пользователь не найден. Зарегистрируйтесь через бота. CODE: USER_NOT_FOUND"
 // @Failure 409 {object} response.ErrorResponse "Вы уже присоединились к этой команде"
 // @Failure 500 {object} response.ErrorResponse "Ошибка при присоединении к команде"
 // @Router /team/join [post]
@@ -121,9 +115,19 @@ func JoinTeamHandler(c *gin.Context) {
 		return
 	}
 
+	// Ищем активную ссылку
+	var invite models.InviteLink
+	if err := storage.DB.Where("code = ? AND expires_at > ?", req.InviteCode, time.Now()).First(&invite).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "Неверный или просроченный код приглашения",
+			"code":  "INVITE_CODE_INVALID",
+		})
+		return
+	}
+
 	var team models.Team
-	if err := storage.DB.Where("invite_link = ?", req.InviteCode).First(&team).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Неверный код приглашения", "code": "INVITE_CODE_INVALID"})
+	if err := storage.DB.First(&team, invite.TeamID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Команда не найдена", "code": "TEAM_NOT_FOUND"})
 		return
 	}
 
@@ -159,6 +163,7 @@ func JoinTeamHandler(c *gin.Context) {
 // @Failure 401 {object} response.ErrorResponse "Пользователь не найден"
 // @Failure 403 {object} response.ErrorResponse "Доступ запрещен (не менеджер)"
 // @Failure 404 {object} response.ErrorCodeResponse "Error:Отсутствует команда у пользователя Code:USER_HAS_NO_TEAM, Error:Команда не найдена Code:TEAM_NOT_FOUND"
+// @Failure 500 {object} response.ErrorResponse "Ошибка при создании/получении ссылки-приглашения"
 // @Router /team/invite [get]
 func GetLinkTeamHandler(c *gin.Context) {
 	telegramID := c.Query("telegram_id")
@@ -192,10 +197,30 @@ func GetLinkTeamHandler(c *gin.Context) {
 			"error": "Команда не найдена",
 			"code":  "TEAM_NOT_FOUND",
 		})
+		return
 	}
 
-	link := team.InviteLink
-	urlLink := fmt.Sprintf("http://t.me/LamadjoTask_bot?start=%s", link)
+	code, err := generateInviteLink()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка генерации ссылки"})
+		return
+	}
+
+	// Сохраняем ссылку с временем жизни
+	expiresAt := time.Now().Add(24 * time.Hour)
+	invite := models.InviteLink{
+		Code:      code,
+		TeamID:    team.ID,
+		ExpiresAt: expiresAt,
+	}
+
+	if err := storage.DB.Create(&invite).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка сохранения ссылки"})
+		return
+	}
+
+	// Формируем URL
+	urlLink := fmt.Sprintf("http://t.me/LamadjoTask_bot?start=%s", code)
 	c.JSON(http.StatusOK, urlLink)
 }
 

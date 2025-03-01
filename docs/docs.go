@@ -237,6 +237,75 @@ const docTemplate = `{
                 }
             }
         },
+        "/meetings/{id}": {
+            "delete": {
+                "description": "Удаляет встречу из расписания команды. Доступно только для менеджеров.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "meetings"
+                ],
+                "summary": "Удаление встречи",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Уникальный идентификатор Telegram",
+                        "name": "telegram_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "ID встречи",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Встреча успешно удалена",
+                        "schema": {
+                            "$ref": "#/definitions/response.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Отсутствует telegram_id или ID встречи",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Пользователь не найден",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещен (не менеджер)",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Встреча не найдена",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Ошибка при удалении встречи",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/team": {
             "put": {
                 "description": "Обновляет название и описание команды. Доступно только для менеджеров.",
@@ -471,6 +540,12 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/response.ErrorCodeResponse"
                         }
+                    },
+                    "500": {
+                        "description": "Ошибка при создании/получении ссылки-приглашения",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
                     }
                 }
             }
@@ -513,7 +588,7 @@ const docTemplate = `{
                         }
                     },
                     "404": {
-                        "description": "Error: Команда не найдена CODE: INVITE_CODE_INVALID, Error: Пользователь не найден. Зарегистрируйтесь через бота. CODE: USER_NOT_FOUND",
+                        "description": "Error: Команда не найдена CODE: INVITE_CODE_INVALID, Error: Команда не найдена. CODE: TEAM_NOT_FOUND, Error: Пользователь не найден. Зарегистрируйтесь через бота. CODE: USER_NOT_FOUND",
                         "schema": {
                             "$ref": "#/definitions/response.ErrorCodeResponse"
                         }

@@ -33,7 +33,7 @@ func main() {
 	if err := storage.DB.AutoMigrate(&models.User{}); err != nil {
 		log.Fatal("Ошибка миграции пользователей: ", err.Error())
 	}
-	if err := storage.DB.AutoMigrate(&models.Team{}, &models.Task{}, &models.Meeting{}, &models.Notification{}, &models.Room{}); err != nil {
+	if err := storage.DB.AutoMigrate(&models.Team{}, &models.Task{}, &models.Meeting{}, &models.Notification{}, &models.Room{}, &models.InviteLink{}); err != nil {
 		log.Fatal("Ошибка миграции остальных моделей: ", err.Error())
 	}
 
@@ -70,6 +70,7 @@ func main() {
 	// Эндпоинты встреч
 	r.POST("/meetings", meetings.CreateMeetingHandler)
 	r.GET("/meetings/available-slots", meetings.GetAvailableTimeSlotsHandler)
+	r.DELETE("/meetings/:id", meetings.DeleteMeetingHandler)
 	//
 
 	// Модуль уведомлений
