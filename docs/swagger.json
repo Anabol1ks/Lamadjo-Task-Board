@@ -598,6 +598,69 @@
                 }
             }
         },
+        "/team/kick": {
+            "get": {
+                "description": "Позволяет менеджеру исключить участника из команды",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "team"
+                ],
+                "summary": "Исключить участника из команды",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Уникальный идентификатор Telegram",
+                        "name": "telegram_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Уникальный идентификатор Telegram участника, который будет исключен",
+                        "name": "kick_telegram_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Участник успешно исключен из команды",
+                        "schema": {
+                            "$ref": "#/definitions/response.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Отсутствует telegram_id или kick_telegram_id",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Пользователь не найден",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Error: Только менеджер может исключить участника из команды. CODE: NOT_MANAGER, Error: Пользователь не находится в вашей команде, CODE: NOT_IN_TEAM",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Ошибка при попытке исключить участника из команды",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/team/leave": {
             "get": {
                 "description": "Позволяет пользователю выйти из текущей команды",

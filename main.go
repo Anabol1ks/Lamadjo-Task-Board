@@ -55,13 +55,14 @@ func main() {
 	r.POST("/team/join", team.JoinTeamHandler)
 	r.GET("/team/my", team.GetMyTeamHandler)
 	r.GET("/team/invite", team.GetLinkTeamHandler)
-	r.GET("/team/members", team.GetMembersTeam)
 	r.GET("/team/leave", team.LeaveMemberTeamHandler)
 	r.PUT("/team", team.ChangeTeamHandler)
 	r.DELETE("/team", team.DeleteTeamHandler)
 	//
 
 	// Эндпоинты для управления участниками команды
+	r.GET("/team/members", team.GetMembersTeam)
+	r.GET("/team/kick", team.KickMemberTeamHandler)
 	//
 
 	// Эндпоинты задач

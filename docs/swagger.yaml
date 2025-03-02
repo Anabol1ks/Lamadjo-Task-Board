@@ -546,6 +546,50 @@ paths:
       summary: Присоединение к команде
       tags:
       - team
+  /team/kick:
+    get:
+      consumes:
+      - application/json
+      description: Позволяет менеджеру исключить участника из команды
+      parameters:
+      - description: Уникальный идентификатор Telegram
+        in: query
+        name: telegram_id
+        required: true
+        type: string
+      - description: Уникальный идентификатор Telegram участника, который будет исключен
+        in: query
+        name: kick_telegram_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Участник успешно исключен из команды
+          schema:
+            $ref: '#/definitions/response.SuccessResponse'
+        "400":
+          description: Отсутствует telegram_id или kick_telegram_id
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "401":
+          description: Пользователь не найден
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "403":
+          description: 'Error: Только менеджер может исключить участника из команды.
+            CODE: NOT_MANAGER, Error: Пользователь не находится в вашей команде, CODE:
+            NOT_IN_TEAM'
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Ошибка при попытке исключить участника из команды
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Исключить участника из команды
+      tags:
+      - team
   /team/leave:
     get:
       consumes:

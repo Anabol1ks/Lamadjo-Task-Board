@@ -438,6 +438,61 @@ func LeaveMemberTeamHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Команда покинута"})
 }
 
+// KickMemberTeamHandler позволяет менеджеру исключить участника из команды
+// @Summary Исключить участника из команды
+// @Description Позволяет менеджеру исключить участника из команды
+// @Tags team
+// @Accept json
+// @Produce json
+// @Param telegram_id query string true "Уникальный идентификатор Telegram"
+// @Param kick_telegram_id query string true "Уникальный идентификатор Telegram участника, который будет исключен"
+// @Success 200 {object} response.SuccessResponse "Участник успешно исключен из команды"
+// @Failure 400 {object} response.ErrorResponse "Отсутствует telegram_id или kick_telegram_id"
+// @Failure 401 {object} response.ErrorResponse "Пользователь не найден"
+// @Failure 403 {object} response.ErrorResponse "Error: Только менеджер может исключить участника из команды. CODE: NOT_MANAGER, Error: Пользователь не находится в вашей команде, CODE: NOT_IN_TEAM"
+// @Failure 500 {{object} response.ErrorResponse "Ошибка при попытке исключить участника из команды"
+// @Router /team/kick [get]
+func KickMemberTeamHandler(c *gin.Context) {
+	telegramID := c.Query("telegram_id")
+	if telegramID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "telegram_id is required"})
+		return
+	}
+	kickTelegramID := c.Query("kick_telegram_id")
+	if kickTelegramID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "kick_telegram_id is required"})
+		return
+	}
+	var user models.User
+	if err := storage.DB.Where("telegram_id = ?", telegramID).First(&user).Error; err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Пользователь не найден"})
+		return
+	}
+	if user.Role != "manager" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Только менеджер может исключить участника из команды", "code": "NOT_MANAGER"})
+		return
+	}
+	var userKick models.User
+	if err := storage.DB.Where("telegram_id = ?", kickTelegramID).First(&userKick).Error; err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Пользователь не найден"})
+		return
+	}
+
+	if *userKick.TeamID != *user.TeamID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Пользователь не находится в вашей команде", "code": "NOT_IN_TEAM"})
+		return
+	}
+
+	userKick.TeamID = nil
+
+	if err := storage.DB.Save(&userKick).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка при попытке исключить участника из команды"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Участник успешно исключен из команды"})
+}
+
 // DeleteTeamHandler удаляет команду и очищает связи с участниками
 // @Summary Удаление команды
 // @Description Удаляет команду и очищает связи со всеми участниками. Доступно только для владельца команды.
