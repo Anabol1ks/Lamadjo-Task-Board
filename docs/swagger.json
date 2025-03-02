@@ -227,6 +227,59 @@
                 }
             }
         },
+        "/meetings/my": {
+            "get": {
+                "description": "Возвращает список всех встреч команды, к которой привязан пользователь",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "meetings"
+                ],
+                "summary": "Получение встреч команды",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Уникальный идентификатор Telegram",
+                        "name": "telegram_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Список встреч команды",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/response.MeetingResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Отсутствует telegram_id или у пользователя нет команды",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Пользователь не найден",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Ошибка при получении встреч",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/meetings/{id}": {
             "delete": {
                 "description": "Удаляет встречу из расписания команды. Доступно только для менеджеров.",

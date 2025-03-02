@@ -338,6 +338,41 @@ paths:
       summary: Получение доступных временных слотов
       tags:
       - meetings
+  /meetings/my:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает список всех встреч команды, к которой привязан пользователь
+      parameters:
+      - description: Уникальный идентификатор Telegram
+        in: query
+        name: telegram_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список встреч команды
+          schema:
+            items:
+              $ref: '#/definitions/response.MeetingResponse'
+            type: array
+        "400":
+          description: Отсутствует telegram_id или у пользователя нет команды
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "401":
+          description: Пользователь не найден
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Ошибка при получении встреч
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Получение встреч команды
+      tags:
+      - meetings
   /team:
     delete:
       consumes:

@@ -335,3 +335,41 @@ func DeleteMeetingHandler(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Встреча успешно удалена"})
 }
+
+// GetMyMeeting получает список встреч команды пользователя
+// @Summary Получение встреч команды
+// @Description Возвращает список всех встреч команды, к которой привязан пользователь
+// @Tags meetings
+// @Accept json
+// @Produce json
+// @Param telegram_id query string true "Уникальный идентификатор Telegram"
+// @Success 200 {array} response.MeetingResponse "Список встреч команды"
+// @Failure 400 {object} response.ErrorResponse "Отсутствует telegram_id или у пользователя нет команды"
+// @Failure 401 {object} response.ErrorResponse "Пользователь не найден"
+// @Failure 500 {object} response.ErrorResponse "Ошибка при получении встреч"
+// @Router /meetings/my [get]
+func GetMyMeeting(c *gin.Context) {
+	telegramID := c.Query("telegram_id")
+	if telegramID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "telegram_id is required"})
+		return
+	}
+	var user models.User
+	if err := storage.DB.Where("telegram_id = ?", telegramID).First(&user).Error; err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Пользователь не найден"})
+		return
+	}
+
+	if user.TeamID == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "У пользователя нет привязанной команды"})
+		return
+	}
+
+	var meetings []models.Meeting
+	if err := storage.DB.Where("team_id = ?", *user.TeamID).Find(&meetings).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка при получении встреч"})
+		return
+	}
+
+	c.JSON(http.StatusOK, meetings)
+}

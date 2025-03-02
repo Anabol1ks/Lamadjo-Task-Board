@@ -50,28 +50,35 @@ func main() {
 
 	r.GET("/user", users.GetMyUser)
 
+	teamGroup := r.Group("/team")
 	// Эндпоинты для управления командами
-	r.POST("/team", team.CreateTeamHandler)
-	r.POST("/team/join", team.JoinTeamHandler)
-	r.GET("/team/my", team.GetMyTeamHandler)
-	r.GET("/team/invite", team.GetLinkTeamHandler)
-	r.GET("/team/leave", team.LeaveMemberTeamHandler)
-	r.PUT("/team", team.ChangeTeamHandler)
-	r.DELETE("/team", team.DeleteTeamHandler)
-	//
+	{
+		teamGroup.POST("", team.CreateTeamHandler)
+		teamGroup.POST("/join", team.JoinTeamHandler)
+		teamGroup.GET("/my", team.GetMyTeamHandler)
+		teamGroup.GET("/invite", team.GetLinkTeamHandler)
+		teamGroup.GET("/leave", team.LeaveMemberTeamHandler)
+		teamGroup.PUT("", team.ChangeTeamHandler)
+		teamGroup.DELETE("", team.DeleteTeamHandler)
+		//
 
-	// Эндпоинты для управления участниками команды
-	r.GET("/team/members", team.GetMembersTeam)
-	r.GET("/team/kick", team.KickMemberTeamHandler)
-	//
+		// Эндпоинты для управления участниками команды
+		r.GET("/team/members", team.GetMembersTeam)
+		r.GET("/team/kick", team.KickMemberTeamHandler)
+		//
+	}
 
 	// Эндпоинты задач
 	//
 
+	meetingsGroup := r.Group("/meetings")
+	{
+		meetingsGroup.POST("/", meetings.CreateMeetingHandler)
+		meetingsGroup.GET("/available-slots", meetings.GetAvailableTimeSlotsHandler)
+		meetingsGroup.DELETE("/:id", meetings.DeleteMeetingHandler)
+		meetingsGroup.GET("/my", meetings.GetMyMeeting)
+	}
 	// Эндпоинты встреч
-	r.POST("/meetings", meetings.CreateMeetingHandler)
-	r.GET("/meetings/available-slots", meetings.GetAvailableTimeSlotsHandler)
-	r.DELETE("/meetings/:id", meetings.DeleteMeetingHandler)
 	//
 
 	// Модуль уведомлений
