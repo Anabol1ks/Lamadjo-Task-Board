@@ -1,10 +1,12 @@
 package meetings
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/Anabol1ks/Lamadjo-Task-Board/internal/models"
+	"github.com/Anabol1ks/Lamadjo-Task-Board/internal/notification"
 	"github.com/Anabol1ks/Lamadjo-Task-Board/internal/response"
 	"github.com/Anabol1ks/Lamadjo-Task-Board/internal/storage"
 	"github.com/gin-gonic/gin"
@@ -191,6 +193,54 @@ func CreateMeetingHandler(c *gin.Context) {
 		UpdatedAt:      meeting.UpdatedAt,
 	}
 
+	var notificationText string
+	if meeting.MeetingType == "online" {
+		notificationText = fmt.Sprintf(
+			"📢 *Новая встреча!*\n\n"+
+				"*Название:* %s\n"+
+				"*Дата:* %s\n"+
+				"*Время:* %s - %s\n"+
+				"*Тип:* Онлайн\n"+
+				"*Ссылка:* [Подключиться](%s)",
+			meeting.Title,
+			formatDateRussian(meeting.Date),
+			meeting.StartTime.Format("15:04"),
+			meeting.EndTime.Format("15:04"),
+			meeting.ConferenceLink,
+		)
+	} else {
+		notificationText = fmt.Sprintf(
+			"📢 *Новая встреча!*\n\n"+
+				"*Название:* %s\n"+
+				"*Дата:* %s\n"+
+				"*Время:* %s - %s\n"+
+				"*Тип:* Офлайн\n"+
+				"*Аудитория:* %s",
+			meeting.Title,
+			formatDateRussian(meeting.Date),
+			meeting.StartTime.Format("15:04"),
+			meeting.EndTime.Format("15:04"),
+			meeting.Room,
+		)
+	}
+
+	// Получаем всех участников команды (предполагается, что в модели User есть поле TelegramID и TeamID)
+	var teamUsers []models.User
+	if err := storage.DB.Where("team_id = ?", meeting.TeamID).Find(&teamUsers).Error; err != nil {
+		// Логирование ошибки, но можно продолжать отправку уведомлений тому, кого удалось найти
+		fmt.Printf("Ошибка получения участников команды: %v\n", err)
+	}
+
+	for _, u := range teamUsers {
+		if u.TelegramID != "" {
+			go func(chatID string) {
+				if err := notification.SendTelegramNotification(chatID, notificationText); err != nil {
+					fmt.Printf("Ошибка отправки уведомления пользователю %s: %v\n", chatID, err)
+				}
+			}(u.TelegramID)
+		}
+	}
+
 	c.JSON(http.StatusOK, response)
 }
 
@@ -326,12 +376,40 @@ func DeleteMeetingHandler(c *gin.Context) {
 		return
 	}
 
+	meetingTitle := meeting.Title
+
 	if err := storage.DB.Delete(&meeting).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка при удалении встречи"})
 		return
 	}
 
-	// (Опционально) можно отправить уведомление участникам о том, что встреча отменена
+	// Формируем текст уведомления
+	notificationText := fmt.Sprintf(
+		"❌ *Встреча отменена!*\n\n"+
+			"*Название:* %s\n"+
+			"*Дата:* %s\n"+
+			"*Время:* %s - %s",
+		meetingTitle,
+		formatDateRussian(meeting.Date),
+		meeting.StartTime.Format("15:04"),
+		meeting.EndTime.Format("15:04"),
+	)
+
+	// Получаем всех участников команды
+	var teamUsers []models.User
+	if err := storage.DB.Where("team_id = ?", meeting.TeamID).Find(&teamUsers).Error; err != nil {
+		fmt.Printf("Ошибка получения участников команды: %v\n", err)
+	}
+
+	for _, u := range teamUsers {
+		if u.TelegramID != "" {
+			go func(chatID string) {
+				if err := notification.SendTelegramNotification(chatID, notificationText); err != nil {
+					fmt.Printf("Ошибка отправки уведомления пользователю %s: %v\n", chatID, err)
+				}
+			}(u.TelegramID)
+		}
+	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Встреча успешно удалена"})
 }
@@ -372,4 +450,15 @@ func GetMyMeeting(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, meetings)
+}
+
+func formatDateRussian(t time.Time) string {
+	months := []string{
+		"января", "февраля", "марта", "апреля", "мая", "июня",
+		"июля", "августа", "сентября", "октября", "ноября", "декабря",
+	}
+	day := t.Day()
+	month := months[t.Month()-1] // t.Month() возвращает значение от 1 до 12
+	year := t.Year()
+	return fmt.Sprintf("%d %s %d", day, month, year)
 }

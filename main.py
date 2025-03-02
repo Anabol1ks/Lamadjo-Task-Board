@@ -12,7 +12,7 @@ ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID")  # Задайте chat_id, котор
 TELEGRAM_URL = f"https://api.telegram.org/bot{TOKEN}/"
 
 # Базовый URL вашего бэкенда (без завершающего слэша)
-BACKEND_BASE_URL = 'hhttp://localhost:8000'
+BACKEND_BASE_URL = 'https://8b2b28-213-87-86-243.ru.tuna.am'
 
 user_states = {}
 
