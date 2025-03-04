@@ -359,6 +359,71 @@ const docTemplate = `{
                 }
             }
         },
+        "/tasks": {
+            "post": {
+                "description": "Creates a new task for a team or individual user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tasks"
+                ],
+                "summary": "Create a new task",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Telegram ID of the manager",
+                        "name": "telegram_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "description": "Task information",
+                        "name": "task",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/tasks.TaskInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Задача успешно создана",
+                        "schema": {
+                            "$ref": "#/definitions/response.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "assigned_to обязателен для персональных задач",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Пользователь не найден",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Только менеджер может создавать встречи",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Ошибка при создании задачи",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/team": {
             "put": {
                 "description": "Обновляет название и описание команды. Доступно только для менеджеров.",
@@ -1128,6 +1193,32 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "telegram_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "tasks.TaskInput": {
+            "type": "object",
+            "required": [
+                "deadline",
+                "description",
+                "is_team",
+                "title"
+            ],
+            "properties": {
+                "assigned_to": {
+                    "type": "string"
+                },
+                "deadline": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "is_team": {
+                    "type": "boolean"
+                },
+                "title": {
                     "type": "string"
                 }
             }

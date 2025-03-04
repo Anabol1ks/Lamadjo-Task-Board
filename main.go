@@ -10,6 +10,7 @@ import (
 	"github.com/Anabol1ks/Lamadjo-Task-Board/internal/meetings"
 	"github.com/Anabol1ks/Lamadjo-Task-Board/internal/models"
 	"github.com/Anabol1ks/Lamadjo-Task-Board/internal/storage"
+	"github.com/Anabol1ks/Lamadjo-Task-Board/internal/tasks"
 	"github.com/Anabol1ks/Lamadjo-Task-Board/internal/team"
 	"github.com/Anabol1ks/Lamadjo-Task-Board/internal/users"
 	"github.com/gin-gonic/gin"
@@ -69,6 +70,10 @@ func main() {
 	}
 
 	// Эндпоинты задач
+	tasksGroup := r.Group("/tasks")
+	{
+		tasksGroup.POST("", tasks.CreateTaskHandlres)
+	}
 	//
 
 	meetingsGroup := r.Group("/meetings")

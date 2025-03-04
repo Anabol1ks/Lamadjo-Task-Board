@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"time"
 )
 
 // SendTelegramNotification отправляет сообщение через Telegram Bot API.
@@ -32,4 +33,39 @@ func SendTelegramNotification(chatID, message string) error {
 		return fmt.Errorf("ошибка отправки уведомления, статус: %d", resp.StatusCode)
 	}
 	return nil
+}
+
+func FormatDateRussian(t time.Time) string {
+	months := []string{
+		"января", "февраля", "марта", "апреля", "мая", "июня",
+		"июля", "августа", "сентября", "октября", "ноября", "декабря",
+	}
+	day := t.Day()
+	month := months[t.Month()-1] // t.Month() возвращает значение от 1 до 12
+	year := t.Year()
+	return fmt.Sprintf("%d %s %d", day, month, year)
+}
+
+func FormatDeadline(deadline time.Time) string {
+	now := time.Now()
+	daysLeft := int(deadline.Sub(now).Hours() / 24)
+
+	var daysText string
+	switch {
+	case daysLeft < 0:
+		return "⌛️ Срок истек"
+	case daysLeft == 0:
+		return "⏳ Сегодня в " + deadline.Format("15:04")
+	case daysLeft == 1:
+		daysText = "1 день"
+	case daysLeft > 1 && daysLeft < 5:
+		daysText = fmt.Sprintf("%d дня", daysLeft)
+	default:
+		daysText = fmt.Sprintf("%d дней", daysLeft)
+	}
+
+	return fmt.Sprintf("📅 %s (%s осталось)",
+		deadline.Format("02.01.2006 в 15:04"),
+		daysText,
+	)
 }

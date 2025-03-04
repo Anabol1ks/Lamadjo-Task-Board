@@ -120,6 +120,24 @@ definitions:
       telegram_id:
         type: string
     type: object
+  tasks.TaskInput:
+    properties:
+      assigned_to:
+        type: string
+      deadline:
+        type: string
+      description:
+        type: string
+      is_team:
+        type: boolean
+      title:
+        type: string
+    required:
+    - deadline
+    - description
+    - is_team
+    - title
+    type: object
   team.CreateTeamInput:
     properties:
       description:
@@ -373,6 +391,49 @@ paths:
       summary: Получение встреч команды
       tags:
       - meetings
+  /tasks:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new task for a team or individual user
+      parameters:
+      - description: Telegram ID of the manager
+        in: query
+        name: telegram_id
+        required: true
+        type: string
+      - description: Task information
+        in: body
+        name: task
+        required: true
+        schema:
+          $ref: '#/definitions/tasks.TaskInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Задача успешно создана
+          schema:
+            $ref: '#/definitions/response.SuccessResponse'
+        "400":
+          description: assigned_to обязателен для персональных задач
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "401":
+          description: Пользователь не найден
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "403":
+          description: Только менеджер может создавать встречи
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Ошибка при создании задачи
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Create a new task
+      tags:
+      - tasks
   /team:
     delete:
       consumes:

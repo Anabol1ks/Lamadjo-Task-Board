@@ -203,7 +203,7 @@ func CreateMeetingHandler(c *gin.Context) {
 				"*Тип:* Онлайн\n"+
 				"*Ссылка:* [Подключиться](%s)",
 			meeting.Title,
-			formatDateRussian(meeting.Date),
+			notification.FormatDateRussian(meeting.Date),
 			meeting.StartTime.Format("15:04"),
 			meeting.EndTime.Format("15:04"),
 			meeting.ConferenceLink,
@@ -217,7 +217,7 @@ func CreateMeetingHandler(c *gin.Context) {
 				"*Тип:* Офлайн\n"+
 				"*Аудитория:* %s",
 			meeting.Title,
-			formatDateRussian(meeting.Date),
+			notification.FormatDateRussian(meeting.Date),
 			meeting.StartTime.Format("15:04"),
 			meeting.EndTime.Format("15:04"),
 			meeting.Room,
@@ -390,7 +390,7 @@ func DeleteMeetingHandler(c *gin.Context) {
 			"*Дата:* %s\n"+
 			"*Время:* %s - %s",
 		meetingTitle,
-		formatDateRussian(meeting.Date),
+		notification.FormatDateRussian(meeting.Date),
 		meeting.StartTime.Format("15:04"),
 		meeting.EndTime.Format("15:04"),
 	)
@@ -450,15 +450,4 @@ func GetMyMeeting(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, meetings)
-}
-
-func formatDateRussian(t time.Time) string {
-	months := []string{
-		"января", "февраля", "марта", "апреля", "мая", "июня",
-		"июля", "августа", "сентября", "октября", "ноября", "декабря",
-	}
-	day := t.Day()
-	month := months[t.Month()-1] // t.Month() возвращает значение от 1 до 12
-	year := t.Year()
-	return fmt.Sprintf("%d %s %d", day, month, year)
 }
