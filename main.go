@@ -64,8 +64,8 @@ func main() {
 		//
 
 		// Эндпоинты для управления участниками команды
-		r.GET("/team/members", team.GetMembersTeam)
-		r.GET("/team/kick", team.KickMemberTeamHandler)
+		teamGroup.GET("/members", team.GetMembersTeam)
+		teamGroup.GET("/kick", team.KickMemberTeamHandler)
 		//
 	}
 
@@ -73,6 +73,8 @@ func main() {
 	tasksGroup := r.Group("/tasks")
 	{
 		tasksGroup.POST("", tasks.CreateTaskHandlres)
+		tasksGroup.GET("", tasks.GetTasksHandlres)
+		tasksGroup.DELETE("/:id", tasks.DeleteTaskHandler)
 	}
 	//
 

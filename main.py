@@ -3,7 +3,6 @@ import time
 import json
 from dotenv import load_dotenv
 import os
-from fastapi import FastAPI, HTTPException, Header, Depends
 
 # Загрузка переменных окружения
 load_dotenv()
@@ -15,8 +14,6 @@ TELEGRAM_URL = f"https://api.telegram.org/bot{TOKEN}/"
 BACKEND_BASE_URL = 'https://8b2b28-213-87-86-243.ru.tuna.am'
 
 user_states = {}
-
-app = FastAPI()
 
 # Словарь для хранения зарегистрированных пользователей: chat_id -> role
 registered_users = {}

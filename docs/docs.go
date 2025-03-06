@@ -360,8 +360,8 @@ const docTemplate = `{
             }
         },
         "/tasks": {
-            "post": {
-                "description": "Creates a new task for a team or individual user",
+            "get": {
+                "description": "Получение списка задач для пользователя",
                 "consumes": [
                     "application/json"
                 ],
@@ -371,17 +371,68 @@ const docTemplate = `{
                 "tags": [
                     "tasks"
                 ],
-                "summary": "Create a new task",
+                "summary": "Получение списка задач",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Telegram ID of the manager",
+                        "description": "Telegram ID пользователя",
+                        "name": "telegram_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Список задач",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/response.TaskResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "telegram_id is required",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Пользователь не найден",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Ошибка при получении задач",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Создание задачи для команды и индивидуально",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tasks"
+                ],
+                "summary": "Создание задачи",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Telegram ID управляющегоr",
                         "name": "telegram_id",
                         "in": "query",
                         "required": true
                     },
                     {
-                        "description": "Task information",
+                        "description": "Информация задачи",
                         "name": "task",
                         "in": "body",
                         "required": true,
@@ -417,6 +468,69 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Ошибка при создании задачи",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/tasks/{id}": {
+            "delete": {
+                "description": "Удаление задачи менеджером команды",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tasks"
+                ],
+                "summary": "Удаление задачи",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Telegram ID менеджера",
+                        "name": "telegram_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "ID задачи",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Задача успешно удалена",
+                        "schema": {
+                            "$ref": "#/definitions/response.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Error: У пользователя нет привязанной команды CODE: NOT_TEAM",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Пользователь не найден",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Задачу создали не вы",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Задача не найдена",
                         "schema": {
                             "$ref": "#/definitions/response.ErrorResponse"
                         }
@@ -1158,6 +1272,44 @@ const docTemplate = `{
                 }
             }
         },
+        "response.TaskResponse": {
+            "type": "object",
+            "properties": {
+                "assigned_to": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "created_by": {
+                    "type": "integer"
+                },
+                "deadline": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "is_team": {
+                    "type": "boolean"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "team_id": {
+                    "type": "integer"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
         "response.TeamResponse": {
             "type": "object",
             "properties": {
@@ -1202,7 +1354,6 @@ const docTemplate = `{
             "required": [
                 "deadline",
                 "description",
-                "is_team",
                 "title"
             ],
             "properties": {
@@ -1210,6 +1361,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "deadline": {
+                    "description": "RFC 3339",
                     "type": "string"
                 },
                 "description": {

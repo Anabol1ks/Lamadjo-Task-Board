@@ -45,3 +45,17 @@ type MeetingResponse struct {
 	CreatedAt      time.Time `json:"created_at"`
 	UpdatedAt      time.Time `json:"updated_at"`
 }
+
+type TaskResponse struct {
+	ID          uint      `json:"id"`
+	Title       string    `json:"title"`
+	Description string    `json:"description"`
+	Deadline    time.Time `json:"deadline"`
+	Status      string    `json:"status"`
+	IsTeam      bool      `json:"is_team"`
+	AssignedTo  *string   `json:"assigned_to"`
+	CreatedBy   uint      `json:"created_by"`
+	TeamID      uint      `json:"team_id"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
