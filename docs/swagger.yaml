@@ -163,6 +163,20 @@ definitions:
     - description
     - title
     type: object
+  tasks.UpdateTaskStatusInput:
+    properties:
+      attachment:
+        description: Ссылка на файл или описание вложения (опционально)
+        type: string
+      completion_text:
+        description: Отчёт по выполнению (опционально)
+        type: string
+      status:
+        description: 'Ожидаемые значения: "in_progress" или "completed"'
+        type: string
+    required:
+    - status
+    type: object
   team.CreateTeamInput:
     properties:
       description:
@@ -533,6 +547,59 @@ paths:
           schema:
             $ref: '#/definitions/response.ErrorResponse'
       summary: Удаление задачи
+      tags:
+      - tasks
+  /tasks/{id}/status:
+    put:
+      consumes:
+      - application/json
+      description: Обновление статуса задачи участником команды или исполнителем персональной
+        задачи
+      parameters:
+      - description: Telegram ID пользователя
+        in: query
+        name: telegram_id
+        required: true
+        type: string
+      - description: ID задачи
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Данные для обновления статуса
+        in: body
+        name: task
+        required: true
+        schema:
+          $ref: '#/definitions/tasks.UpdateTaskStatusInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Статус задачи успешно обновлен
+          schema:
+            $ref: '#/definitions/response.SuccessResponse'
+        "400":
+          description: Неверное значение статуса
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "401":
+          description: Пользователь не найден
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "403":
+          description: У вас нет прав для изменения статуса этой задачи
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: Задача не найдена
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Ошибка при обновлении статуса задачи
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Обновление статуса задачи
       tags:
       - tasks
   /team:

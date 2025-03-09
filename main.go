@@ -75,6 +75,7 @@ func main() {
 		tasksGroup.POST("", tasks.CreateTaskHandlres)
 		tasksGroup.GET("", tasks.GetTasksHandlres)
 		tasksGroup.DELETE("/:id", tasks.DeleteTaskHandler)
+		tasksGroup.PUT("/:id/status", tasks.UpdateTaskStatusHandler)
 	}
 	//
 

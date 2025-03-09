@@ -538,6 +538,84 @@ const docTemplate = `{
                 }
             }
         },
+        "/tasks/{id}/status": {
+            "put": {
+                "description": "Обновление статуса задачи участником команды или исполнителем персональной задачи",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tasks"
+                ],
+                "summary": "Обновление статуса задачи",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Telegram ID пользователя",
+                        "name": "telegram_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "ID задачи",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Данные для обновления статуса",
+                        "name": "task",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/tasks.UpdateTaskStatusInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Статус задачи успешно обновлен",
+                        "schema": {
+                            "$ref": "#/definitions/response.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверное значение статуса",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Пользователь не найден",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "У вас нет прав для изменения статуса этой задачи",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Задача не найдена",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Ошибка при обновлении статуса задачи",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/team": {
             "put": {
                 "description": "Обновляет название и описание команды. Доступно только для менеджеров.",
@@ -1371,6 +1449,26 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "tasks.UpdateTaskStatusInput": {
+            "type": "object",
+            "required": [
+                "status"
+            ],
+            "properties": {
+                "attachment": {
+                    "description": "Ссылка на файл или описание вложения (опционально)",
+                    "type": "string"
+                },
+                "completion_text": {
+                    "description": "Отчёт по выполнению (опционально)",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "Ожидаемые значения: \"in_progress\" или \"completed\"",
                     "type": "string"
                 }
             }

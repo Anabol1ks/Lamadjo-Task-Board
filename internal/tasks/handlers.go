@@ -301,3 +301,125 @@ func DeleteTaskHandler(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Задача успешно удалена"})
 }
+
+type UpdateTaskStatusInput struct {
+	Status         string `json:"status" binding:"required"` // Ожидаемые значения: "in_progress" или "completed"
+	CompletionText string `json:"completion_text"`           // Отчёт по выполнению (опционально)
+	Attachment     string `json:"attachment"`                // Ссылка на файл или описание вложения (опционально)
+}
+
+// UpdateTaskStatusHandler обновляет статус задачи.
+// Если статус становится "completed", отправляется уведомление менеджеру команды с данными отчёта и информацией о том, кто выполнил задачу.
+// UpdateTaskStatusHandler обновляет статус задачи
+// @Summary Обновление статуса задачи
+// @Description Обновление статуса задачи участником команды или исполнителем персональной задачи
+// @Tags tasks
+// @Accept json
+// @Produce json
+// @Param telegram_id query string true "Telegram ID пользователя"
+// @Param id path string true "ID задачи"
+// @Param task body UpdateTaskStatusInput true "Данные для обновления статуса"
+// @Success 200 {object} response.SuccessResponse "Статус задачи успешно обновлен"
+// @Failure 400 {object} response.ErrorCodeResponse "Error: telegram_id is required CODE: NOT_TG_ID"
+// @Failure 400 {object} response.ErrorCodeResponse "Error: task_id is required CODE: NOT_TASK_ID"
+// @Failure 400 {object} response.ErrorCodeResponse "Error: У пользователя нет привязанной команды CODE: NOT_TEAM"
+// @Failure 400 {object} response.ErrorResponse "Неверное значение статуса"
+// @Failure 401 {object} response.ErrorResponse "Пользователь не найден"
+// @Failure 403 {object} response.ErrorResponse "У вас нет прав для изменения статуса этой задачи"
+// @Failure 404 {object} response.ErrorResponse "Задача не найдена"
+// @Failure 500 {object} response.ErrorResponse "Ошибка при обновлении статуса задачи"
+// @Router /tasks/{id}/status [put]
+func UpdateTaskStatusHandler(c *gin.Context) {
+	telegramID := c.Query("telegram_id")
+	if telegramID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "telegram_id is required"})
+		return
+	}
+
+	taskID := c.Param("id")
+	if taskID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "task_id is required"})
+		return
+	}
+
+	// Поиск пользователя по TelegramID
+	var user models.User
+	if err := storage.DB.Where("telegram_id = ?", telegramID).First(&user).Error; err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Пользователь не найден"})
+		return
+	}
+
+	// Поиск задачи по ID
+	var task models.Task
+	if err := storage.DB.First(&task, taskID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Задача не найдена"})
+		return
+	}
+
+	// Проверка прав: если задача персональная, то изменять статус может только назначенный участник.
+	if !task.IsTeam {
+		if task.AssignedTo == nil || *task.AssignedTo != user.TelegramID {
+			c.JSON(http.StatusForbidden, gin.H{"error": "У вас нет прав для изменения статуса этой задачи"})
+			return
+		}
+	} else {
+		// Для командной задачи проверяем, что пользователь принадлежит команде.
+		if user.TeamID == nil || *user.TeamID != task.TeamID {
+			c.JSON(http.StatusForbidden, gin.H{"error": "У вас нет прав для изменения статуса этой задачи"})
+			return
+		}
+	}
+
+	// Считываем данные из запроса
+	var input UpdateTaskStatusInput
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Проверяем, что статус имеет корректное значение.
+	if input.Status != "in_progress" && input.Status != "completed" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Неверное значение статуса. Допустимые значения: in_progress, completed"})
+		return
+	}
+
+	// Обновляем статус задачи в БД
+	task.Status = input.Status
+	if err := storage.DB.Save(&task).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка при обновлении статуса задачи"})
+		return
+	}
+
+	// Если статус изменён на "completed", отправляем уведомление менеджеру.
+	if input.Status == "completed" {
+		// Предполагаем, что поле CreatedBy в задаче содержит ID менеджера, создавшего задачу.
+		var manager models.User
+		if err := storage.DB.First(&manager, task.CreatedBy).Error; err != nil {
+			c.JSON(http.StatusOK, gin.H{"message": "Статус задачи обновлен, но уведомление менеджеру не отправлено"})
+			return
+		}
+
+		// Формируем текст уведомления с данными отчёта и информацией, кто выполнил задачу.
+		notificationText := fmt.Sprintf(
+			"✅ *Задача выполнена!*\n\n▫️ *Заголовок:* %s\n▫️ *Описание:* %s\n▫️ *Статус:* выполнено\n▫️ *Выполнил:* %s\n\n*Отчет участника:*\n%s",
+			task.Title,
+			task.Description,
+			user.Name, // Добавляем имя пользователя, который завершил задачу
+			input.CompletionText,
+		)
+		if input.Attachment != "" {
+			notificationText += fmt.Sprintf("\n▫️ *Вложение:* %s", input.Attachment)
+		}
+
+		// Отправляем уведомление менеджеру через Telegram (асинхронно).
+		if manager.TelegramID != "" {
+			go func(chatID string) {
+				if err := notification.SendTelegramNotification(chatID, notificationText); err != nil {
+					fmt.Printf("Ошибка отправки уведомления менеджеру %s: %v\n", chatID, err)
+				}
+			}(manager.TelegramID)
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Статус задачи успешно обновлен"})
+}
