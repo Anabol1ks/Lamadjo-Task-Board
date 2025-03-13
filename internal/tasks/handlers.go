@@ -33,7 +33,7 @@ type TaskInput struct {
 // @Failure 400 {object} response.ErrorResponse "У пользователя нет привязанной команды"
 // @Failure 400 {object} response.ErrorResponse "assigned_to обязателен для персональных задач"
 // @Failure 401 {object} response.ErrorResponse "Пользователь не найден"
-// @Failure 403 {object} response.ErrorResponse "Только менеджер может создавать встречи"
+// @Failure 403 {object} response.ErrorResponse "Только менеджер может создавать задачу"
 // @Failure 500 {object} response.ErrorResponse "Ошибка при создании задачи"
 // @Router /tasks [post]
 func CreateTaskHandlres(c *gin.Context) {
@@ -49,7 +49,7 @@ func CreateTaskHandlres(c *gin.Context) {
 		return
 	}
 	if user.Role != "manager" {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Только менеджер может создавать встречи"})
+		c.JSON(http.StatusForbidden, gin.H{"error": "Только менеджер может создавать задачу"})
 		return
 	}
 	if user.TeamID == nil {
@@ -208,7 +208,7 @@ func GetTasksHandlres(c *gin.Context) {
 // @Failure 400 {object} response.ErrorResponse "Error: task_id is required CODE: NOT_TASK_ID"
 // @Failure 400 {object} response.ErrorResponse "Error: У пользователя нет привязанной команды CODE: NOT_TEAM"
 // @Failure 401 {object} response.ErrorResponse "Пользователь не найден"
-// @Failure 403 {object} response.ErrorResponse "Только менеджер может создавать встречи"
+// @Failure 403 {object} response.ErrorResponse "Только менеджер может удалять задачу"
 // @Failure 403 {object} response.ErrorResponse "Задачу создали не вы"
 // @Failure 500 {object} response.ErrorResponse "Задача не найдена"
 // @Router /tasks/{id} [delete]
@@ -231,7 +231,7 @@ func DeleteTaskHandler(c *gin.Context) {
 		return
 	}
 	if user.Role != "manager" {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Только менеджер может создавать встречи"})
+		c.JSON(http.StatusForbidden, gin.H{"error": "Только менеджер может удалить задачу"})
 		return
 	}
 	if user.TeamID == nil {
@@ -422,4 +422,86 @@ func UpdateTaskStatusHandler(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Статус задачи успешно обновлен"})
+}
+
+// @Summary Получить выданные задачи
+// @Description Возвращает список задач, созданных менеджером. Отправляет уведомление в Telegram с списком задач или сообщением об их отсутствии.
+// @Tags tasks
+// @Accept json
+// @Produce json
+// @Param telegram_id query string true "Telegram ID менеджера"
+// @Success 200 {array} response.TaskResponse "Список выданных задач"
+// @Failure 400 {object} response.ErrorResponse "telegram_id is required"
+// @Failure 401 {object} response.ErrorResponse "Пользователь не найден"
+// @Failure 403 {object} response.ErrorResponse "Доступно только для руководителя"
+// @Failure 500 {object} response.ErrorResponse "Ошибка при получении задач"
+// @Router /tasks/issued [get]
+func IssuedTaskHandler(c *gin.Context) {
+	telegramID := c.Query("telegram_id")
+	if telegramID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "telegram_id is required", "code": "NOT_TG_ID"})
+		return
+	}
+
+	var user models.User
+	if err := storage.DB.Where("telegram_id = ?", telegramID).First(&user).Error; err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Пользователь не найден"})
+		return
+	}
+
+	if user.Role != "manager" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Доступно только для руководителя"})
+		return
+	}
+
+	var tasks []models.Task
+	if err := storage.DB.Where("created_by = ?", user.ID).Find(&tasks).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка при получении задач"})
+		return
+	}
+
+	// Формирование уведомления для Telegram
+	var notificationText string
+	if len(tasks) == 0 {
+		notificationText = "ℹ️ *Нет выданных задач*"
+	} else {
+		notificationText = "📋 *Список выданных задач:*\n\n"
+		for i, task := range tasks {
+			notificationText += fmt.Sprintf(
+				"%d. *%s*\n▫️ Описание: _%s_\n▫️ Дедлайн: %s\n▫️ Статус: %s\n\n",
+				i+1,
+				task.Title,
+				task.Description,
+				notification.FormatDeadline(task.Deadline),
+				task.Status,
+			)
+		}
+	}
+
+	// Асинхронная отправка уведомления
+	if user.TelegramID != "" {
+		go func() {
+			if err := notification.SendTelegramNotification(user.TelegramID, notificationText); err != nil {
+				fmt.Printf("Ошибка отправки уведомления: %v\n", err)
+			}
+		}()
+	}
+
+	// Формирование ответа API
+	var responseTasks []response.TaskResponse
+	for _, task := range tasks {
+		responseTasks = append(responseTasks, response.TaskResponse{
+			ID:          task.ID,
+			Title:       task.Title,
+			Description: task.Description,
+			Deadline:    task.Deadline,
+			Status:      task.Status,
+			IsTeam:      task.IsTeam,
+			AssignedTo:  task.AssignedTo,
+			CreatedBy:   task.CreatedBy,
+			TeamID:      task.TeamID,
+		})
+	}
+
+	c.JSON(http.StatusOK, responseTasks)
 }

@@ -451,13 +451,72 @@
                         }
                     },
                     "403": {
-                        "description": "Только менеджер может создавать встречи",
+                        "description": "Только менеджер может создавать задачу",
                         "schema": {
                             "$ref": "#/definitions/response.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Ошибка при создании задачи",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/tasks/issued": {
+            "get": {
+                "description": "Возвращает список задач, созданных менеджером. Отправляет уведомление в Telegram с списком задач или сообщением об их отсутствии.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tasks"
+                ],
+                "summary": "Получить выданные задачи",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Telegram ID менеджера",
+                        "name": "telegram_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Список выданных задач",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/response.TaskResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "telegram_id is required",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Пользователь не найден",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Доступно только для руководителя",
+                        "schema": {
+                            "$ref": "#/definitions/response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Ошибка при получении задач",
                         "schema": {
                             "$ref": "#/definitions/response.ErrorResponse"
                         }
