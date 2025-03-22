@@ -461,31 +461,31 @@ func IssuedTaskHandler(c *gin.Context) {
 	}
 
 	// Формирование уведомления для Telegram
-	var notificationText string
-	if len(tasks) == 0 {
-		notificationText = "ℹ️ *Нет выданных задач*"
-	} else {
-		notificationText = "📋 *Список выданных задач:*\n\n"
-		for i, task := range tasks {
-			notificationText += fmt.Sprintf(
-				"%d. *%s*\n▫️ Описание: _%s_\n▫️ Дедлайн: %s\n▫️ Статус: %s\n\n",
-				i+1,
-				task.Title,
-				task.Description,
-				notification.FormatDeadline(task.Deadline),
-				task.Status,
-			)
-		}
-	}
+	// var notificationText string
+	// if len(tasks) == 0 {
+	// 	notificationText = "ℹ️ *Нет выданных задач*"
+	// } else {
+	// 	notificationText = "📋 *Список выданных задач:*\n\n"
+	// 	for i, task := range tasks {
+	// 		notificationText += fmt.Sprintf(
+	// 			"%d. *%s*\n▫️ Описание: _%s_\n▫️ Дедлайн: %s\n▫️ Статус: %s\n\n",
+	// 			i+1,
+	// 			task.Title,
+	// 			task.Description,
+	// 			notification.FormatDeadline(task.Deadline),
+	// 			task.Status,
+	// 		)
+	// 	}
+	// }
 
-	// Асинхронная отправка уведомления
-	if user.TelegramID != "" {
-		go func() {
-			if err := notification.SendTelegramNotification(user.TelegramID, notificationText); err != nil {
-				fmt.Printf("Ошибка отправки уведомления: %v\n", err)
-			}
-		}()
-	}
+	// // Асинхронная отправка уведомления
+	// if user.TelegramID != "" {
+	// 	go func() {
+	// 		if err := notification.SendTelegramNotification(user.TelegramID, notificationText); err != nil {
+	// 			fmt.Printf("Ошибка отправки уведомления: %v\n", err)
+	// 		}
+	// 	}()
+	// }
 
 	// Формирование ответа API
 	var responseTasks []response.TaskResponse
