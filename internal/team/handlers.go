@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/Anabol1ks/Lamadjo-Task-Board/internal/models"
+	"github.com/Anabol1ks/Lamadjo-Task-Board/internal/notification"
 	"github.com/Anabol1ks/Lamadjo-Task-Board/internal/storage"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -488,6 +489,14 @@ func KickMemberTeamHandler(c *gin.Context) {
 	if err := storage.DB.Save(&userKick).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка при попытке исключить участника из команды"})
 		return
+	}
+
+	notificationText := fmt.Sprintf(
+		"😕 *Мы сожелеем, но... *\n\n" +
+			"Вы были исключены из команды...",
+	)
+	if err := notification.SendTelegramNotification(userKick.TelegramID, notificationText); err != nil {
+		fmt.Printf("Ошибка отправки уведомления пользователю %s: %v\n", userKick.TelegramID, err)
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Участник успешно исключен из команды"})
