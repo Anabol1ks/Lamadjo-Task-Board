@@ -12,7 +12,16 @@ load_dotenv()
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID")
 TELEGRAM_URL = f"https://api.telegram.org/bot{TOKEN}/"
-BACKEND_BASE_URL = 'https://nz1gf6-2a00-1370-81a6-6f51-b11e-a6ed-9bc5-478e.ru.tuna.am'
+BACKEND_BASE_URL = 'https://75ad6g-213-87-86-236.ru.tuna.am'
+
+# Добавим константы для фиксированных аудиторий и временных слотов
+AVAILABLE_ROOMS = ["A-1", "A-2", "A-3", "A-4", "A-5"]
+FIXED_TIME_SLOTS = [
+    {"start": "12:00", "end": "13:20"},
+    {"start": "13:30", "end": "14:50"},
+    {"start": "15:00", "end": "16:20"},
+    {"start": "16:30", "end": "17:50"}
+]
 
 @dataclass
 class UserState:
@@ -535,6 +544,115 @@ def process_callback(callback):
             send_message(chat_id, f"❌ Ошибка создания задачи: {result['error']}")
             send_task_management_menu(chat_id, user_state)
         user_state.state = "authorized"
+    elif data == "manage_meetings":
+        send_meeting_management_menu(chat_id, user_state)
+    elif data == "my_meetings" or data == "list_meetings":
+        result = meetings_get_my_request(chat_id)
+        if result["success"]:
+            meetings = result["data"]
+            if not meetings:
+                keyboard = {
+                    "inline_keyboard": [[{"text": "🔙 Назад", "callback_data": "back_to_main"}]]
+                }
+                send_message(chat_id, "*Мои встречи*\n\n_У вас пока нет запланированных встреч_", reply_markup=keyboard)
+                return
+
+            message = "*Мои встречи:*\n\n"
+            keyboard = {"inline_keyboard": []}
+
+            for meeting in meetings:
+                meeting_type = "🌐 Онлайн" if meeting["MeetingType"] == "online" else f"🏢 Офлайн (Аудитория: {meeting['Room']})"
+                start_time = format_meeting_datetime(meeting["StartTime"])
+                end_time = format_meeting_datetime(meeting["EndTime"])
+                
+                message += (
+                    f"*{meeting['Title']}*\n"
+                    f"Тип: {meeting_type}\n"
+                    f"Дата и время: {start_time} - {end_time}\n"
+                )
+                
+                if meeting["ConferenceLink"]:
+                    message += f"Ссылка: {meeting['ConferenceLink']}\n"
+                
+                message += "\n"
+                
+                if user_state.role == "manager":
+                    keyboard["inline_keyboard"].append([{
+                        "text": f"❌ Отменить: {meeting['Title']}",
+                        "callback_data": f"delete_meeting_{meeting['ID']}"
+                    }])
+
+            keyboard["inline_keyboard"].append([{"text": "🔙 Назад", "callback_data": "back_to_main"}])
+            send_message(chat_id, message, reply_markup=keyboard)
+        else:
+            send_message(chat_id, f"❌ Ошибка: {result['error']}")
+            send_main_menu(chat_id, user_state)
+    elif data == "create_meeting":
+        user_state.state = "awaiting_meeting_type"
+        keyboard = {
+            "inline_keyboard": [
+                [
+                    {"text": "🌐 Онлайн", "callback_data": "meeting_type_online"},
+                    {"text": "🏢 Офлайн", "callback_data": "meeting_type_offline"}
+                ],
+                [{"text": "🔙 Отмена", "callback_data": "manage_meetings"}]
+            ]
+        }
+        send_message(chat_id, "Выберите тип встречи:", reply_markup=keyboard)
+    elif data.startswith("meeting_type_"):
+        meeting_type = data.split("_")[-1]
+        user_state.data["meeting_type"] = meeting_type
+        if meeting_type == "offline":
+            # Для офлайн встреч сначала выбираем аудиторию
+            keyboard = {"inline_keyboard": []}
+            for room in AVAILABLE_ROOMS:
+                keyboard["inline_keyboard"].append([{
+                    "text": f"🏢 {room}",
+                    "callback_data": f"select_room_{room}"
+                }])
+            keyboard["inline_keyboard"].append([{"text": "🔙 Отмена", "callback_data": "create_meeting"}])
+            send_message(chat_id, "Выберите аудиторию:", reply_markup=keyboard)
+        else:
+            # Для онлайн встреч сразу переходим к названию
+            user_state.state = "awaiting_meeting_title"
+            send_message(chat_id, "Введите название встречи:")
+    elif data.startswith("select_room_"):
+        room = data.split("_")[-1]
+        user_state.data["room"] = room
+        user_state.state = "awaiting_meeting_title"
+        send_message(chat_id, "Введите название встречи:")
+    elif data.startswith("select_slot_"):
+        # Обработка выбора временного слота
+        parts = data.split("_")
+        start_time = parts[-2]
+        end_time = parts[-1]
+        
+        result = meetings_create_request(
+            chat_id,
+            user_state.data["title"],
+            user_state.data["meeting_type"],
+            user_state.data["date"],
+            start_time,
+            end_time,
+            user_state.data["room"]
+        )
+        
+        if result["success"]:
+            send_message(chat_id, "✅ Встреча успешно создана!")
+            user_state.state = "authorized"
+            send_meeting_management_menu(chat_id, user_state)
+        else:
+            send_message(chat_id, f"❌ Ошибка: {result['error']}")
+            send_meeting_management_menu(chat_id, user_state)
+    elif data.startswith("delete_meeting_"):
+        meeting_id = data.split("_")[-1]
+        result = meetings_delete_request(chat_id, meeting_id)
+        if result["success"]:
+            send_message(chat_id, "✅ Встреча успешно отменена")
+            # Обновляем список встреч
+            process_callback({"id": callback_id, "message": callback["message"], "data": "my_meetings"})
+        else:
+            send_message(chat_id, f"❌ Ошибка: {result['error']}")
 
 def process_message(message):
     chat_id = message["chat"]["id"]
@@ -671,6 +789,54 @@ def process_message(message):
         else:
             send_message(chat_id, f"❌ Ошибка обновления статуса: {result['error']}")
         user_state.state = "authorized"
+
+    elif user_state.state == "awaiting_meeting_title":
+        user_state.data["title"] = text
+        user_state.state = "awaiting_meeting_date"
+        send_message(chat_id, "Введите дату встречи в формате ГГГГ-ММ-ДД\nНапример: 2024-03-25")
+    elif user_state.state == "awaiting_meeting_date":
+        try:
+            # Проверяем формат даты
+            date = datetime.strptime(text, "%Y-%m-%d")
+            user_state.data["date"] = text
+            
+            if user_state.data["meeting_type"] == "offline":
+                # Получаем доступные слоты для выбранной аудитории
+                result = meetings_get_available_slots_request(user_state.data["room"], text)
+                if result["success"]:
+                    available_slots = result["data"].get("available_slots", [])
+                    if not available_slots:
+                        send_message(chat_id, "❌ Нет доступных временных слотов в этой аудитории на выбранную дату")
+                        user_state.state = "awaiting_meeting_date"
+                        send_message(chat_id, "Выберите другую дату в формате ГГГГ-ММ-ДД:")
+                        return
+
+                    message = "*Доступные временные слоты:*\n\n"
+                    keyboard = {"inline_keyboard": []}
+                    
+                    for slot in available_slots:
+                        keyboard["inline_keyboard"].append([{
+                            "text": f"🕒 {slot['start']} - {slot['end']}",
+                            "callback_data": f"select_slot_{slot['start']}_{slot['end']}"
+                        }])
+                    
+                    keyboard["inline_keyboard"].append([{"text": "🔙 Отмена", "callback_data": "create_meeting"}])
+                    send_message(chat_id, message, reply_markup=keyboard)
+                else:
+                    send_message(chat_id, f"❌ Ошибка: {result['error']}")
+                    send_meeting_management_menu(chat_id, user_state)
+            else:
+                # Для онлайн встреч предлагаем выбрать время из фиксированных слотов
+                keyboard = {"inline_keyboard": []}
+                for slot in FIXED_TIME_SLOTS:
+                    keyboard["inline_keyboard"].append([{
+                        "text": f"🕒 {slot['start']} - {slot['end']}",
+                        "callback_data": f"select_slot_{slot['start']}_{slot['end']}"
+                    }])
+                keyboard["inline_keyboard"].append([{"text": "🔙 Отмена", "callback_data": "create_meeting"}])
+                send_message(chat_id, "*Выберите время встречи:*", reply_markup=keyboard)
+        except ValueError:
+            send_message(chat_id, "❌ Неверный формат даты. Попробуйте еще раз.\nФормат: ГГГГ-ММ-ДД")
 
     # Отправляем сообщение о навигации только если пользователь находится в состоянии "authorized"
     if user_state.state == "authorized":
@@ -1045,6 +1211,103 @@ def send_issued_tasks_menu(chat_id):
     ])
     
     send_message(chat_id, message, reply_markup=keyboard)
+
+def send_meeting_management_menu(chat_id, user_state: UserState):
+    keyboard = {
+        "inline_keyboard": [
+            [{"text": "📝 Создать встречу", "callback_data": "create_meeting"}],
+            [{"text": "📅 Список встреч", "callback_data": "list_meetings"}],
+            [{"text": "🔙 Назад", "callback_data": "back_to_main"}]
+        ]
+    }
+    send_message(chat_id, "*Управление встречами*\nВыберите действие:", reply_markup=keyboard)
+
+def meetings_create_request(chat_id, title, meeting_type, date, start_time, end_time, room=None):
+    url = f"{BACKEND_BASE_URL}/meetings"
+    params = {"telegram_id": str(chat_id)}
+    payload = {
+        "title": title,
+        "meeting_type": meeting_type,
+        "date": date,
+        "start_time": start_time,
+        "end_time": end_time,
+    }
+    if room:
+        payload["room"] = room
+
+    headers = {
+        "User-Agent": "TelegramBot/1.0",
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+    }
+    try:
+        response = requests.post(url, params=params, json=payload, headers=headers)
+        if response.status_code == 200:
+            return {"success": True, "data": response.json()}
+        else:
+            return {"success": False, "error": response.json().get("error", f"Статус: {response.status_code}")}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+def meetings_get_available_slots_request(room, date):
+    url = f"{BACKEND_BASE_URL}/meetings/available-slots"
+    params = {
+        "room": room,
+        "date": date
+    }
+    headers = {
+        "User-Agent": "TelegramBot/1.0",
+        "Accept": "application/json",
+    }
+    try:
+        response = requests.get(url, params=params, headers=headers)
+        if response.status_code == 200:
+            return {"success": True, "data": response.json()}
+        else:
+            return {"success": False, "error": response.json().get("error", f"Статус: {response.status_code}")}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+def meetings_get_my_request(chat_id):
+    url = f"{BACKEND_BASE_URL}/meetings/my"
+    params = {"telegram_id": str(chat_id)}
+    headers = {
+        "User-Agent": "TelegramBot/1.0",
+        "Accept": "application/json",
+    }
+    try:
+        response = requests.get(url, params=params, headers=headers)
+        if response.status_code == 200:
+            return {"success": True, "data": response.json()}
+        else:
+            return {"success": False, "error": response.json().get("error", f"Статус: {response.status_code}")}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+def meetings_delete_request(chat_id, meeting_id):
+    url = f"{BACKEND_BASE_URL}/meetings/{meeting_id}"
+    params = {"telegram_id": str(chat_id)}
+    headers = {
+        "User-Agent": "TelegramBot/1.0",
+        "Accept": "application/json",
+    }
+    try:
+        response = requests.delete(url, params=params, headers=headers)
+        if response.status_code == 200:
+            return {"success": True, "data": response.json()}
+        else:
+            return {"success": False, "error": response.json().get("error", f"Статус: {response.status_code}")}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+def format_meeting_datetime(date_str):
+    try:
+        # Парсим строку в datetime объект
+        dt = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+        # Форматируем дату и время в удобный для чтения формат
+        return dt.strftime("%d.%m.%Y %H:%M")
+    except:
+        return "Неизвестное время"
 
 def main():
     print("Бот запущен и ожидает сообщений...")
