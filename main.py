@@ -12,7 +12,7 @@ load_dotenv()
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID")
 TELEGRAM_URL = f"https://api.telegram.org/bot{TOKEN}/"
-BACKEND_BASE_URL = 'https://nz1gf6-2a00-1370-81a6-6f51-b11e-a6ed-9bc5-478e.ru.tuna.am'
+BACKEND_BASE_URL = os.getenv("BACKEND_BASE_URL")
 
 @dataclass
 class UserState:
