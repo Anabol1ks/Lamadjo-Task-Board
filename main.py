@@ -12,7 +12,7 @@ load_dotenv()
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID")
 TELEGRAM_URL = f"https://api.telegram.org/bot{TOKEN}/"
-BACKEND_BASE_URL = 'https://75ad6g-213-87-86-236.ru.tuna.am'
+BACKEND_BASE_URL = os.getenv("BACKEND_BASE_URL")
 
 # Добавим константы для фиксированных аудиторий и временных слотов
 AVAILABLE_ROOMS = ["A-1", "A-2", "A-3", "A-4", "A-5"]
