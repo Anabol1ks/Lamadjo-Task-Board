@@ -34,7 +34,7 @@ func main() {
 	if err := storage.DB.AutoMigrate(&models.User{}); err != nil {
 		log.Fatal("Ошибка миграции пользователей: ", err.Error())
 	}
-	if err := storage.DB.AutoMigrate(&models.Team{}, &models.Task{}, &models.Meeting{}, &models.Notification{}, &models.Room{}, &models.InviteLink{}); err != nil {
+	if err := storage.DB.AutoMigrate(&models.Team{}, &models.Task{}, &models.Meeting{}, &models.Room{}, &models.InviteLink{}); err != nil {
 		log.Fatal("Ошибка миграции остальных моделей: ", err.Error())
 	}
 
